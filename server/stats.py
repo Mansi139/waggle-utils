@@ -1,7 +1,6 @@
 import os
 import os.path
 import re
-import sqlite3 as sql
 import subprocess
 
 
@@ -36,20 +35,6 @@ def readfields(sep, *path):
 
 def loadavg():
     fields = readtext('/proc/loadavg').split()
-    var1 = float(fields[0])
-    var2 = float(fields[1])
-    var3 = float(fields[2])
-    
-    res =  '{ "loadavg1": '  + str(float(fields[0])) + ', "loadavg10": ' +  str(float(fields[1])) + ', "loadavg5": ' + str(float(fields[2])) + ' }'
-    
-    with sql.connect("test.db") as con:
-        cur = con.cursor()
-        cur.execute('''INSERT INTO observations(date_time,type,data)
-                        VALUES ((datetime('now','localtime')), "loadavg", ?)''',(res,))
-        
-        con.commit()
-        msg = "Record successfully added"
-        print (msg)
     
     return {
         'loadavg1' : float(fields[0]),
@@ -57,7 +42,6 @@ def loadavg():
         'loadavg10': float(fields[2]),
     }
 
-    con.close()
 
 def machineid():
     fields = readtext('/etc/machine-id')
@@ -69,6 +53,7 @@ def bootid():
     fields = readtext('/proc/sys/kernel/random/boot_id')
     print (fields)
     return fields
+
 
 def hostname():
     field = readtext('/etc/hosts')
@@ -95,19 +80,27 @@ def availableMemory():
     for fields in readfields('\s+', '/proc/meminfo'):
        
         if fields[0].startswith('MemTotal'):
-            print (fields[0], fields[1], fields[2])
             mem_total = float(fields[1])
         if fields[0].startswith('MemAvailable'):
-            print (fields[0], fields[1], fields[2])
             mem_available = float(fields[1])
 
         stats = {
                 'MemTotal' : str(mem_total) + ' kB',
                 'MemAvailable' : str(mem_available) + ' kB'
                 }
-    print (percentage)
     return stats
 
+def available_disk_media():
+    result = subprocess.run(['df','-h'], stdout=subprocess.PIPE)
+    fields = result.stdout.decode('utf-8')
+
+    res = fields.split()
+    stats = {
+        'Total size' : (res[8]),
+        'Available'  : res[9],
+    }
+
+    return stats
 
 def cpustats():
     stats = {}
@@ -123,16 +116,9 @@ def cpustats():
             }
             
     res = str(stats)
-    with sql.connect("test.db") as con:
-            cur = con.cursor()
-            cur.execute('''INSERT INTO observations(date_time,type,data) 
-                            VALUES ((datetime('now','localtime')), "cpustats", ?)''',(res,))
-            con.commit()
-            msg = "Record successfully added"
-            print (msg)
 
     return stats
-    con.close()
+
 
 def meminfo():
     stats = {}
@@ -148,17 +134,8 @@ def meminfo():
 
         stats[key] = value
 
-    res = str(stats)
-    with sql.connect("test.db") as con:
-            cur = con.cursor()
-            cur.execute('''INSERT INTO observations (date_time,type,data) 
-                            VALUES ((datetime('now','localtime')), "meminfo", ?)''',(res,))
-            con.commit()
-            msg = "Record successfully added"
-            print (msg)
-
     return stats
-    con.close()
+
 
 
 def mounts():
@@ -173,18 +150,7 @@ def mounts():
             'attr': fields[3],
         }
 
-    res = str(results)
-    with sql.connect("test.db") as con:
-            cur = con.cursor()
-            cur.execute('''INSERT INTO observations (date_time,type,data) 
-                            VALUES ((datetime('now','localtime')), "mounts", ?)''',(res,))
-            con.commit()
-            msg = "Record successfully added"
-            print (msg)
-
     return results
-    con.close()
-
 
 def uptime():
     fields = readtext('/proc/uptime').split()
@@ -193,15 +159,6 @@ def uptime():
     
     res =  '{ "idle": '  + str(float(fields[0])) + ', "uptime": ' +  str(float(fields[1])) + ' }'
     
-    with sql.connect("test.db") as con:
-        cur = con.cursor()
-        cur.execute('''INSERT INTO observations(date_time,type,data)
-                        VALUES ((datetime('now','localtime')), "uptime", ?)''',(res,))
-        
-        con.commit()
-        msg = "Record successfully added"
-        print (msg)
-
     return {
         'uptime': float(fields[0]),
         'idle': float(fields[1]),
