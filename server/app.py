@@ -62,10 +62,47 @@ def blockinfo(block):
 def devices():
     return jsonify(stats.devices())
 
+@app.route('/machineID')
+def machineID():
+    return jsonify(stats.machineid())
+
+@app.route('/bootID')
+def bootID():
+    return jsonify(stats.bootid())
+
+@app.route('/hostname')
+def hostname():
+    return jsonify(stats.hostname())
+
 
 @app.route('/version')
 def version():
     return jsonify(stats.version())
+
+
+@app.route('/kernelversion')
+def kernel_version():
+    return jsonify(stats.kernel_version())
+
+
+@app.route('/hardwarempdel')
+def hardware_model():
+    return jsonify(stats.hardware_model())
+
+
+@app.route('/cpuload')
+def cpuload():
+    return jsonify(stats.cpuload())
+
+
+@app.route('/availablememory')
+def available_memory():
+    return jsonify(stats.availableMemory())
+
+
+@app.route('/git')
+def git():
+    return jsonify(stats.git())
 
 @app.route('/')
 def index():

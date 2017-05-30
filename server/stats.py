@@ -2,6 +2,8 @@ import os
 import os.path
 import re
 import sqlite3 as sql
+import subprocess
+
 
 units = {
     'kB': 1024,
@@ -57,9 +59,58 @@ def loadavg():
 
     con.close()
 
+def machineid():
+    fields = readtext('/etc/machine-id')
+    print (fields)
+    return fields
+
+
+def bootid():
+    fields = readtext('/proc/sys/kernel/random/boot_id')
+    print (fields)
+    return fields
+
+def hostname():
+    field = readtext('/etc/hosts')
+    print (field)
+    return field
+
+def cpuload():
+    stats = {}
+    result = subprocess.run(['top','-n','1'], stdout=subprocess.PIPE)
+    fields = result.stdout.decode('utf-8')
+    
+    res = fields.split()
+    stats[0] = res[11]
+    stats[1] = res[12]
+    stats[2] = res[13]
+    return stats
+
+def availableMemory():
+    
+    mem_total = 0.0
+    mem_available = 0.0
+    percentage = 0.0
+    
+    for fields in readfields('\s+', '/proc/meminfo'):
+       
+        if fields[0].startswith('MemTotal'):
+            print (fields[0], fields[1], fields[2])
+            mem_total = float(fields[1])
+        if fields[0].startswith('MemAvailable'):
+            print (fields[0], fields[1], fields[2])
+            mem_available = float(fields[1])
+
+        stats = {
+                'MemTotal' : str(mem_total) + ' kB',
+                'MemAvailable' : str(mem_available) + ' kB'
+                }
+    print (percentage)
+    return stats
+
+
 def cpustats():
     stats = {}
-
     for fields in readfields('\s+', '/proc/stat'):
         if fields[0].startswith('cpu'):
             stats[fields[0]] = {
@@ -82,7 +133,6 @@ def cpustats():
 
     return stats
     con.close()
-
 
 def meminfo():
     stats = {}
@@ -214,7 +264,20 @@ def devices():
 
 
 def version():
-    return readtext('/proc/version')
+    result = subprocess.run(['uname', '-mrs'], stdout=subprocess.PIPE)
+    fields = result.stdout.decode('utf-8').split()
+    return fields[0]
+
+
+def kernel_version():
+    result = subprocess.run(['uname', '-mrs'], stdout=subprocess.PIPE)
+    fields = result.stdout.decode('utf-8').split()
+    return fields[1]
+
+def hardware_model():
+    result = subprocess.run(['uname', '-mrs'], stdout=subprocess.PIPE)
+    fields = result.stdout.decode('utf-8').split()
+    return fields[2]
 
 
 def hex_to_ipv4(s):
